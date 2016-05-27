@@ -9,6 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../locals-progress/locals-progress.html">
+<link rel="import" href="../locals-progress/locals-progress.html">
 
 <!--
 An element providing a solution to no problem in particular.
@@ -33,7 +34,7 @@ Example:
   
     </style>
     <locals-progress round start="{{timerval}}" end="60" size="120"></locals-progress>
-    <span>{{pincode}}</span>
+    <span>{{topic}}</span>
   </template>
 
 </dom-module>
@@ -46,7 +47,16 @@ var self;
 
     properties: {
 
-      
+      web3: {
+        type: Object,
+        observer: '_web3'
+      },
+
+      topic: {
+        type: Number,
+        observer: '_topic',
+        value: null
+      }
 
     },
 
@@ -61,18 +71,20 @@ var self;
       // necessary), or kick off any processes the element wants to perform.
       this.mode = 'view';
       this.timerval = 0;
-      this.pincode = Math.floor(Math.random()*990000) + 10000;
+
       setInterval(this.timer.bind(this), 1000);
     },
 
     timer: function(){
+      if(this.topic == null){
+        this.topic = Math.floor(Math.random()*990000) + 10000;
+      }
       this.timerval++;
-      console.log(this.timerval);
+      //console.log(this.timerval);
       if(this.timerval>=60){
-        console.log(Math.floor(Math.random()*990000) + 10000);
-        this.pincode = Math.floor(Math.random()*990000) + 10000;
+        //console.log(Math.floor(Math.random()*990000) + 10000);
+        this.topic = Math.floor(Math.random()*990000) + 10000;
         this.timerval = 0;
-        this.whisperlisten(this.pincode);
       }
     },
 
@@ -83,6 +95,7 @@ var self;
       // This is a good place to perform any work related to your element's
       // visual state or active behavior (measuring sizes, beginning animations,
       // loading resources, etc).
+
     },
 
     detached: function() {
@@ -92,9 +105,6 @@ var self;
       // Use this to clean up anything you did in `attached`.
     },
 
-    whisperlisten: function(channel){
-      
-    },
     // Element Behavior
 
     /**
@@ -109,7 +119,64 @@ var self;
         }
         //console.log(a ,'(',typeof a,') is',b,'(',typeof b,') they are equal for ==',a == b,', they are equal for ===',a === b);
         return a === b;
-      }
+      },
+
+      _web3: function() {
+
+          var self = this;
+          console.log('web3 started');
+
+          this.identity = this.web3.shh.newIdentity();
+
+        },
+
+      _topic: function(){
+          var self = this;
+          if(this.web3){
+            var filter = this.web3.shh.filter({
+              "topics": [this.web3.fromAscii(this.topic)],
+            });
+
+            console.log("Ik abonneer me op " ,this.topic);
+
+            filter.watch(function(error, result) {
+              if (!error){
+                var payload = JSON.parse(self.web3.toAscii(result.payload));
+                //console.log("topic:", payload.topic, "PAYload", payload.input);
+                self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
+              }
+            });
+          }
+        },
+
+        _web3: function() {
+
+          var self = this;
+          console.log('web3 started');
+
+          this.identity = this.web3.shh.newIdentity();
+
+         
+        },
+
+
+        _sendmessage: function() {
+          var postresult = this.whisperpost(this.nickname, this.chatinput);
+        },
+
+
+        whisperpost: function(topic, input) {
+          return this.web3.shh.post({
+            "from": this.identity,
+            "topics": [this.web3.fromAscii(topic)],
+            "payload": this.web3.fromAscii(JSON.stringify({
+              topic: topic,
+              input: input
+            })),
+            "ttl": 100,
+            "priority": 1000
+          });
+        }
 
   });
 
