@@ -8,6 +8,7 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../locals-progress/locals-progress.html">
 
 <!--
 An element providing a solution to no problem in particular.
@@ -30,63 +31,21 @@ Example:
         box-sizing: border-box;
       }
   
-      .author img {
-        display: block;
-        float: left;
-        margin-right: 5px;
-        max-height: 100px;
-        max-width: 100px;
-      }
     </style>
-    <h1>&lt;locals-whisperer&gt;</h1>
-    <content></content>
-    <p class="author">
-      <img src="{{author.image}}">
-      Cheers,<br/>
-      <span class="name">{{author.name}}</span>
-    </p>
+   
   </template>
 
 </dom-module>
 
 <script>
-
+var self;
   Polymer({
 
     is: 'locals-whisperer',
 
     properties: {
 
-      /**
-       * `fancy` indicates that the element should don a monocle and tophat,
-       * while checking its pocket watch.
-       */
-      fancy: Boolean,
-
-      /**
-       * Describes the author of the element, but is really just an excuse to
-       * show off JSDoc annotations.
-       *
-       * @type {{name: string, image: string}}
-       */
-      author: {
-        type: Object,
-        // Use `value` to provide a default value for a property, by setting it
-        // on your element's prototype.
-        //
-        // If you provide a function, as we do here, Polymer will call that
-        // _per element instance_.
-        //
-        // We do that to ensure that each element gets its own copy of the
-        // value, rather than having it shared across all instances (via the
-        // prototype).
-        value: function() {
-          return {
-            name:  'Dimitri Glazkov',
-            image: 'http://addyosmani.com/blog/wp-content/uploads/2013/04/unicorn.jpg',
-          };
-        }
-      },
+      
 
     },
 
@@ -99,6 +58,23 @@ Example:
       //
       // This is the point where you should make modifications to the DOM (when
       // necessary), or kick off any processes the element wants to perform.
+      this.mode = 'view';
+      this.timerval = 0;
+      var self = this;
+      setInterval(this.timer, 1000);
+    },
+
+    createCode: function(){
+      this.progresspassed = 0;
+      this.code = Math.floor(Math.random()*90000) + 10000;
+    },
+
+    timer: function(){
+      self.timerval++;
+      console.log(self.timerval);
+      if(this.timerval>=60){
+        console.log(Math.floor(Math.random()*90000) + 10000);
+      }
     },
 
     attached: function() {
@@ -125,27 +101,13 @@ Example:
      * @event locals-whisperer-lasers
      * @detail {{sound: String}}
      */
-
-    /**
-     * Sometimes it's just nice to say hi.
-     *
-     * @param {string} greeting A positive greeting.
-     * @return {string} The full greeting.
-     */
-    sayHello: function(greeting) {
-      var response = greeting || 'Hello World!';
-      return 'locals-whisperer says, ' + response;
-    },
-
-    /**
-     * Attempt to destroy this element's enemies with a beam of light!
-     *
-     * Or, at least, dispatch an event in the vain hope that someone else will
-     * do the zapping.
-     */
-    fireLasers: function() {
-      this.fire('locals-whisperer-lasers', {sound: 'Pew pew!'});
-    }
+     _is: function(a, b) {
+        if (b === undefined){
+          b = true;
+        }
+        //console.log(a ,'(',typeof a,') is',b,'(',typeof b,') they are equal for ==',a == b,', they are equal for ===',a === b);
+        return a === b;
+      }
 
   });
 
