@@ -130,7 +130,7 @@ var self;
 
       _topic: function(){
           var self = this;
-          if(this.web3){
+          if(this.web3 && this.topic){
             var filter = this.web3.shh.filter({
               "topics": [this.web3.fromAscii(this.topic)],
             });
@@ -141,7 +141,7 @@ var self;
               if (!error){
                 var payload = JSON.parse(self.web3.toAscii(result.payload));
                 //console.log("topic:", payload.topic, "PAYload", payload.input);
-                self.negotiate(payload.input);
+                self.processmsg(payload);
                 self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
               }
             });
@@ -171,11 +171,13 @@ var self;
           });
         },
 
-        negotiate: function(incoming){
+        processmsg: function(incoming){
           var crypt = new JSEncrypt({default_key_size: 512});
           this.pubkey = crypt.getPublicKey();
           this.privkey = crypt.getPrivateKey();
+          ///var payload = JSON.parse(incoming);
           console.log(incoming);
+          //this.whisperpost(payload.data.channel, JSON.stringify({command: 'heresthepubkey', data: this.pubkey}));
         }
 
   });
