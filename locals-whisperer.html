@@ -32,7 +32,8 @@ Example:
       }
   
     </style>
-   
+    <locals-progress round start="{{timerval}}" end="60" size="120"></locals-progress>
+    <span>{{pincode}}</span>
   </template>
 
 </dom-module>
@@ -60,20 +61,18 @@ var self;
       // necessary), or kick off any processes the element wants to perform.
       this.mode = 'view';
       this.timerval = 0;
-      var self = this;
-      setInterval(this.timer, 1000);
-    },
-
-    createCode: function(){
-      this.progresspassed = 0;
-      this.code = Math.floor(Math.random()*90000) + 10000;
+      this.pincode = Math.floor(Math.random()*990000) + 10000;
+      setInterval(this.timer.bind(this), 1000);
     },
 
     timer: function(){
-      self.timerval++;
-      console.log(self.timerval);
+      this.timerval++;
+      console.log(this.timerval);
       if(this.timerval>=60){
-        console.log(Math.floor(Math.random()*90000) + 10000);
+        console.log(Math.floor(Math.random()*990000) + 10000);
+        this.pincode = Math.floor(Math.random()*990000) + 10000;
+        this.timerval = 0;
+        this.whisperlisten(this.pincode);
       }
     },
 
@@ -93,6 +92,9 @@ var self;
       // Use this to clean up anything you did in `attached`.
     },
 
+    whisperlisten: function(channel){
+      
+    },
     // Element Behavior
 
     /**
