@@ -19,7 +19,8 @@
   ],
   "dependencies": {
     "polymer": "Polymer/polymer#^1.1.0",
-    "locals-progress": "https://github.com/locals-world/locals-progress.git"
+    "locals-progress": "https://github.com/locals-world/locals-progress.git",
+    "jsencrypt": "^2.3.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0"

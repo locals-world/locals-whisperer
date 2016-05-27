@@ -10,6 +10,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../locals-progress/locals-progress.html">
 <link rel="import" href="../locals-progress/locals-progress.html">
+<script src="../jsencrypt/bin/jsencrypt.min.js"></script>
 
 <!--
 An element providing a solution to no problem in particular.
@@ -122,13 +123,10 @@ var self;
       },
 
       _web3: function() {
-
-          var self = this;
-          console.log('web3 started');
-
-          this.identity = this.web3.shh.newIdentity();
-
-        },
+        var self = this;
+        console.log('web3 started');
+        this.identity = this.web3.shh.newIdentity();
+      },
 
       _topic: function(){
           var self = this;
@@ -137,12 +135,13 @@ var self;
               "topics": [this.web3.fromAscii(this.topic)],
             });
 
-            console.log("Ik abonneer me op " ,this.topic);
+            //console.log("Ik abonneer me op " ,this.topic);
 
             filter.watch(function(error, result) {
               if (!error){
                 var payload = JSON.parse(self.web3.toAscii(result.payload));
                 //console.log("topic:", payload.topic, "PAYload", payload.input);
+                self.negotiate(payload.input);
                 self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
               }
             });
@@ -150,20 +149,14 @@ var self;
         },
 
         _web3: function() {
-
           var self = this;
           console.log('web3 started');
-
           this.identity = this.web3.shh.newIdentity();
-
-         
         },
-
 
         _sendmessage: function() {
           var postresult = this.whisperpost(this.nickname, this.chatinput);
         },
-
 
         whisperpost: function(topic, input) {
           return this.web3.shh.post({
@@ -176,6 +169,13 @@ var self;
             "ttl": 100,
             "priority": 1000
           });
+        },
+
+        negotiate: function(incoming){
+          var crypt = new JSEncrypt({default_key_size: 512});
+          this.pubkey = crypt.getPublicKey();
+          this.privkey = crypt.getPrivateKey();
+          console.log(incoming);
         }
 
   });
