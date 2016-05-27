@@ -130,9 +130,14 @@ var self;
 
       _topic: function(){
           var self = this;
+
+
+
           if(this.web3 && this.topic){
+            var topic = this.topic.toString();
+            //console.log(typeof topic);
             var filter = this.web3.shh.filter({
-              "topics": [this.web3.fromAscii(this.topic)],
+              "topics": [this.web3.fromAscii(topic)],
             });
 
             //console.log("Ik abonneer me op " ,this.topic);
@@ -141,8 +146,10 @@ var self;
               if (!error){
                 var payload = JSON.parse(self.web3.toAscii(result.payload));
                 //console.log("topic:", payload.topic, "PAYload", payload.input);
+                
                 self.processmsg(payload);
-                self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
+                
+                //self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
               }
             });
           }
