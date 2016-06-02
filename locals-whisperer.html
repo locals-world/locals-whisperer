@@ -57,7 +57,7 @@ var self;
         type: Number,
         observer: '_topic',
         value: null
-      }
+      },      
 
     },
 
@@ -76,16 +76,25 @@ var self;
       setInterval(this.timer.bind(this), 1000);
     },
 
+    _getpincode: function(){
+
+      l = 100;
+
+
+      var rnd = Math.floor(Math.random()*(l*10-1)) + l;
+      return (rnd.toString());
+    },
+
     timer: function(){
       if(this.topic == null){
-        this.topic = Math.floor(Math.random()*990000) + 10000;
+        this.topic = this._getpincode();
       }
       this.timerval++;
       //console.log(this.timerval);
       if(this.timerval>=60){
         //console.log(Math.floor(Math.random()*990000) + 10000);
-        this.topic = Math.floor(Math.random()*990000) + 10000;
 
+        this.topic = this._getpincode();
         this.timerval = 0;
       }
     },
@@ -192,8 +201,18 @@ var self;
               this.whisperpost(input.data.channel, JSON.stringify({command: 'heresthepubkey', data: this.pubkey}));
               };
               break;
-          }
           
+          
+
+          this.fire('msg-received',incoming);
+
+          // var crypt = new JSEncrypt({default_key_size: 512});
+          // this.pubkey = crypt.getPublicKey();
+          // this.privkey = crypt.getPrivateKey();
+          // ///var payload = JSON.parse(incoming);
+          // console.log(incoming);
+          // //this.whisperpost(payload.data.channel, JSON.stringify({command: 'heresthepubkey', data: this.pubkey}));
+        }
 
   });
 
