@@ -8,21 +8,16 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../locals-progress/locals-progress.html">
-<link rel="import" href="../locals-progress/locals-progress.html">
 <script src="../jsencrypt/bin/jsencrypt.min.js"></script>
 
 <!--
-An element providing a solution to no problem in particular.
+Whisper listener component
 
 Example:
 
     <locals-whisperer></locals-whisperer>
 
-@group Seed Elements
 @element locals-whisperer
-@demo demo/index.html
-@hero hero.svg
 -->
 <dom-module id="locals-whisperer">
 
@@ -34,8 +29,8 @@ Example:
       }
   
     </style>
-    <locals-progress round start="{{timerval}}" end="60" size="120"></locals-progress>
-    <span>{{topic}}</span>
+    <!-- <locals-progress round value="{{progress}}" max="100" size="120"></locals-progress>
+    <span>{{topic}} / {{progress}}</span> -->
   </template>
 
 </dom-module>
@@ -52,12 +47,25 @@ var self;
         type: Object,
         observer: '_web3'
       },
-
+      // the current topic we're listening to
       topic: {
         type: Number,
         observer: '_topic',
-        value: null
-      },      
+        value: null,
+        notify:true
+      },
+      // progress is a value between 0 and 100 denoting how much time until next topic will be generated
+      // 0 = period start ; 100 = period is over
+      progress: {
+        type: Number,
+        notify: true
+      },
+
+      // How many decimals should the topic have ( min 2 )
+      decimals: {
+        type: Number,
+        value: 5
+      }      
 
     },
 
@@ -72,17 +80,26 @@ var self;
       // necessary), or kick off any processes the element wants to perform.
       this.mode = 'view';
       this.timerval = 0;
+      this.holding = false;
 
       setInterval(this.timer.bind(this), 1000);
     },
 
     _getpincode: function(){
-
-      l = 100;
-
-
-      var rnd = Math.floor(Math.random()*(l*10-1)) + l;
+      if (this.decimals < 2){
+        this.decimals = 2;
+      }
+      l = Math.pow(10,this.decimals-1);
+      var rnd = Math.floor(Math.random()*(l*9)) + l - 1;
       return (rnd.toString());
+    },
+
+    // Triggering this function holds on to the current value for 5 minutes.
+    hold: function(){
+      if (!this.holding){
+        this.holding = true;
+        this.timerval -= 5*60;
+      }
     },
 
     timer: function(){
@@ -90,40 +107,35 @@ var self;
         this.topic = this._getpincode();
       }
       this.timerval++;
-      //console.log(this.timerval);
-      if(this.timerval>=60){
-        //console.log(Math.floor(Math.random()*990000) + 10000);
+     
+      if (this.timerval < 0){
+        this.progress = 0;
+      }else{
+        this.progress = Math.floor(this.timerval / 60 * 100);
+      }
 
+      if(this.timerval>=60){        
         this.topic = this._getpincode();
         this.timerval = 0;
       }
     },
 
     attached: function() {
-      // `attached` fires once the element and its parents have been inserted
-      // into a document.
-      //
-      // This is a good place to perform any work related to your element's
-      // visual state or active behavior (measuring sizes, beginning animations,
-      // loading resources, etc).
-
+     
     },
 
     detached: function() {
-      // The analog to `attached`, `detached` fires when the element has been
-      // removed from a document.
-      //
-      // Use this to clean up anything you did in `attached`.
+      this.stopfilter();
+    },
+
+    stopfilter: function(){
+     if (this.filter){
+      this.filter.stopWatching();
+     }
     },
 
     // Element Behavior
 
-    /**
-     * The `locals-whisperer-lasers` event is fired whenever `fireLasers` is called.
-     *
-     * @event locals-whisperer-lasers
-     * @detail {{sound: String}}
-     */
      _is: function(a, b) {
         if (b === undefined){
           b = true;
@@ -141,18 +153,19 @@ var self;
       _topic: function(){
           var self = this;
 
-
-
           if(this.web3 && this.topic){
+
+            this.stopfilter();
+
             var topic = this.topic.toString();
             //console.log(typeof topic);
-            var filter = this.web3.shh.filter({
+            this.filter = this.web3.shh.filter({
               "topics": [this.web3.fromAscii(topic)],
             });
 
             //console.log("Ik abonneer me op " ,this.topic);
 
-            filter.watch(function(error, result) {
+            this.filter.watch(function(error, result) {
               if (!error){
                 var payload = JSON.parse(self.web3.toAscii(result.payload));
                 //console.log("topic:", payload.topic, "PAYload", payload.input);
