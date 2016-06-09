@@ -20,213 +20,174 @@ Example:
 @element locals-whisperer
 -->
 <dom-module id="locals-whisperer">
-
-  <template>
-    <style>
-      :host {
-        display: block;
-        box-sizing: border-box;
-      }
-  
-    </style>
-    <!-- <locals-progress round value="{{progress}}" max="100" size="120"></locals-progress>
-    <span>{{topic}} / {{progress}}</span> -->
+  <template>  
   </template>
-
 </dom-module>
 
 <script>
-var self;
-  Polymer({
+Polymer({
 
-    is: 'locals-whisperer',
+  is: 'locals-whisperer',
 
-    properties: {
+  properties: {
 
-      web3: {
-        type: Object,
-        observer: '_web3'
-      },
-      // the current topic we're listening to
-      topic: {
-        type: Number,
-        observer: '_topic',
-        value: null,
-        notify:true
-      },
-      // progress is a value between 0 and 100 denoting how much time until next topic will be generated
-      // 0 = period start ; 100 = period is over
-      progress: {
-        type: Number,
-        notify: true
-      },
-
-      // How many decimals should the topic have ( min 2 )
-      decimals: {
-        type: Number,
-        value: 5
-      }      
-
+    web3: {
+      type: Object,
+      observer: '_web3'
+    },
+    // the current topic we're listening to
+    topic: {
+      type: Number,
+      observer: '_topic',
+      value: null,
+      notify: true
+    },
+    // progress is a value between 0 and 100 denoting how much time until next topic will be generated
+    // 0 = period start ; 100 = period is over
+    progress: {
+      type: Number,
+      notify: true
     },
 
-    // Element Lifecycle
+    // How many decimals should the topic have ( min 2 )
+    decimals: {
+      type: Number,
+      value: 5
+    }
 
-    ready: function() {
-      // `ready` is called after all elements have been configured, but
-      // propagates bottom-up. This element's children are ready, but parents
-      // are not.
-      //
-      // This is the point where you should make modifications to the DOM (when
-      // necessary), or kick off any processes the element wants to perform.
-      this.mode = 'view';
+  },
+
+  // Element Lifecycle
+
+  ready: function() {
+    // `ready` is called after all elements have been configured, but
+    // propagates bottom-up. This element's children are ready, but parents
+    // are not.
+    //
+    // This is the point where you should make modifications to the DOM (when
+    // necessary), or kick off any processes the element wants to perform.
+    this.mode = 'view';
+    this.timerval = 0;
+    this.holding = false;
+
+    setInterval(this.timer.bind(this), 1000);
+
+  },
+
+  _getpincode: function() {
+    if (this.decimals < 2) {
+      this.decimals = 2;
+    }
+    l = Math.pow(10, this.decimals - 1);
+    var rnd = Math.floor(Math.random() * (l * 9)) + l - 1;
+    return (rnd.toString());
+  },
+
+  // Triggering this function holds on to the current value for 5 minutes.
+  hold: function() {
+    if (!this.holding) {
+      this.holding = true;
+      this.timerval -= 5 * 60;
+    }
+  },
+
+  timer: function() {
+    if (this.topic == null) {
+      this.topic = this._getpincode();
+    }
+    this.timerval++;
+
+    if (this.timerval < 0) {
+      this.progress = 0;
+    } else {
+      this.progress = Math.floor(this.timerval / 60 * 100);
+    }
+
+    if (this.timerval >= 60) {
+      this.topic = this._getpincode();
       this.timerval = 0;
-      this.holding = false;
+    }
+  },
 
-      setInterval(this.timer.bind(this), 1000);
-    },
+  attached: function() {
 
-    _getpincode: function(){
-      if (this.decimals < 2){
-        this.decimals = 2;
-      }
-      l = Math.pow(10,this.decimals-1);
-      var rnd = Math.floor(Math.random()*(l*9)) + l - 1;
-      return (rnd.toString());
-    },
+  },
 
-    // Triggering this function holds on to the current value for 5 minutes.
-    hold: function(){
-      if (!this.holding){
-        this.holding = true;
-        this.timerval -= 5*60;
-      }
-    },
+  detached: function() {
+    this.stopfilter();
+  },
 
-    timer: function(){
-      if(this.topic == null){
-        this.topic = this._getpincode();
-      }
-      this.timerval++;
-     
-      if (this.timerval < 0){
-        this.progress = 0;
-      }else{
-        this.progress = Math.floor(this.timerval / 60 * 100);
-      }
-
-      if(this.timerval>=60){        
-        this.topic = this._getpincode();
-        this.timerval = 0;
-      }
-    },
-
-    attached: function() {
-     
-    },
-
-    detached: function() {
-      this.stopfilter();
-    },
-
-    stopfilter: function(){
-     if (this.filter){
+  stopfilter: function() {
+    if (this.filter) {
+      console.log('locals-whisperer: stop watching current channel')
       this.filter.stopWatching();
-     }
-    },
+    }
+  },
 
-    // Element Behavior
+  // Element Behavior
 
-     _is: function(a, b) {
-        if (b === undefined){
-          b = true;
-        }
-        //console.log(a ,'(',typeof a,') is',b,'(',typeof b,') they are equal for ==',a == b,', they are equal for ===',a === b);
-        return a === b;
-      },
+  _is: function(a, b) {
+    if (b === undefined) {
+      b = true;
+    }
+    return a === b;
+  },
 
-      _web3: function() {
-        var self = this;
-        console.log('web3 started');
-        this.identity = this.web3.shh.newIdentity();
-      },
+  _web3: function() {
+    var self = this;
+    console.log('web3 started');
+    this.identity = this.web3.shh.newIdentity();
+  },
 
-      _topic: function(){
-          var self = this;
+  _topic: function() {
+    var self = this;
 
-          if(this.web3 && this.topic){
+    if (this.web3 && this.topic) {
 
-            this.stopfilter();
+      this.stopfilter();
 
-            var topic = this.topic.toString();
-            //console.log(typeof topic);
-            this.filter = this.web3.shh.filter({
-              "topics": [this.web3.fromAscii(topic)],
-            });
+      var topic = this.topic.toString();
+      //console.log(typeof topic);
+      this.filter = this.web3.shh.filter({
+        "topics": [this.web3.fromAscii(topic)],
+      });
 
-            //console.log("Ik abonneer me op " ,this.topic);
+      console.log("locals-whisperer: channelswitch, start listening to", this.topic);
 
-            this.filter.watch(function(error, result) {
-              if (!error){
-                var payload = JSON.parse(self.web3.toAscii(result.payload));
-                //console.log("topic:", payload.topic, "PAYload", payload.input);
-                
-                self.processmsg(payload);
-                
-                self.fire('msg-received', {topic: payload.topic, payload: JSON.parse(payload.input)});
-              }
-            });
-          }
-        },
-
-        _web3: function() {
-          var self = this;
-          console.log('web3 started');
-          this.identity = this.web3.shh.newIdentity();
-        },
-
-        _sendmessage: function() {
-          var postresult = this.whisperpost(this.nickname, this.chatinput);
-        },
-
-        whisperpost: function(topic, input) {
-          return this.web3.shh.post({
-            "from": this.identity,
-            "topics": [this.web3.fromAscii(topic)],
-            "payload": this.web3.fromAscii(JSON.stringify({
-              topic: topic,
-              input: input
-            })),
-            "ttl": 100,
-            "priority": 1000
+      this.filter.watch(function(error, result) {
+        if (!error) {
+          var payload = JSON.parse(self.web3.toAscii(result.payload));
+          self.fire('msg-received', {
+            topic: payload.topic,
+            payload: JSON.parse(payload.input)
           });
-        },
-
-        processmsg: function(incoming){
-          var input = JSON.parse(incoming.input);
-
-          switch(input.command){
-            case 'request':
-              var crypt = new JSEncrypt({default_key_size: 512});
-              this.pubkey = crypt.getPublicKey();
-              this.privkey = crypt.getPrivateKey();
-              console.log(incoming);
-          
-              this.whisperpost(input.data.channel, JSON.stringify({command: 'heresthepubkey', data: this.pubkey}));
-              };
-              break;
-          
-          
-
-          this.fire('msg-received',incoming);
-
-          // var crypt = new JSEncrypt({default_key_size: 512});
-          // this.pubkey = crypt.getPublicKey();
-          // this.privkey = crypt.getPrivateKey();
-          // ///var payload = JSON.parse(incoming);
-          // console.log(incoming);
-          // //this.whisperpost(payload.data.channel, JSON.stringify({command: 'heresthepubkey', data: this.pubkey}));
         }
+      });
+    }
+  },
 
-  });
+  _web3: function() {
+    var self = this;
+    console.log('web3 started');
+    this.identity = this.web3.shh.newIdentity();
+  },
+
+  _sendmessage: function() {
+    var postresult = this.whisperpost(this.nickname, this.chatinput);
+  },
+
+  whisperpost: function(topic, input) {
+    return this.web3.shh.post({
+      "from": this.identity,
+      "topics": [this.web3.fromAscii(topic)],
+      "payload": this.web3.fromAscii(JSON.stringify({
+        topic: topic,
+        input: input
+      })),
+      "ttl": 100,
+      "priority": 1000
+    });
+  },
+});
 
 </script>
