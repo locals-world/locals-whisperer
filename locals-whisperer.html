@@ -70,15 +70,18 @@ Polymer({
     this.timerval = 0;
     this.holding = false;
 
+    this.channels = {};
+
     setInterval(this.timer.bind(this), 1000);
 
   },
 
-  _getpincode: function() {
-    if (this.decimals < 2) {
-      this.decimals = 2;
+  _getpincode: function(decimals) {
+
+    if (decimals < 2) {
+      decimals = 2;
     }
-    l = Math.pow(10, this.decimals - 1);
+    l = Math.pow(10, decimals - 1);
     var rnd = Math.floor(Math.random() * (l * 9)) + l - 1;
     return (rnd.toString());
   },
@@ -93,7 +96,7 @@ Polymer({
 
   timer: function() {
     if (this.topic == null) {
-      this.topic = this._getpincode();
+      this.topic = this._getpincode(this.decimals);
     }
     this.timerval++;
 
@@ -104,8 +107,43 @@ Polymer({
     }
 
     if (this.timerval >= 60) {
-      this.topic = this._getpincode();
+      this.topic = this._getpincode(this.decimals);
       this.timerval = 0;
+    }
+  },
+
+  openchannel: function() {
+    var _pin = this._getpincode(20);
+
+    if (this.web3 && this.topic) {
+
+      this.channels[_pin] = {
+        filter: this.web3.shh.filter({
+          "topics": [_pin],
+        })
+      };
+
+      console.log("locals-whisperer: channelswitch, creating channel ", _pin);
+
+      this.channels[_pin].filter.watch(function(error, result) {
+        if (!error) {
+          var payload = JSON.parse(this.web3.toAscii(result.payload));
+          this.fire('msg-received', {
+            topic: payload.topic,
+            payload: JSON.parse(payload.input)
+          });
+        }
+      }.bind(this));
+
+      return _pin;
+    } else {
+      return;
+    }
+  },
+
+  closechannel: function(_pin){
+    if (this.channels[_pin]){
+       this.channels[_pin].filter.stopWatching();
     }
   },
 
@@ -170,10 +208,6 @@ Polymer({
     var self = this;
     console.log('web3 started');
     this.identity = this.web3.shh.newIdentity();
-  },
-
-  _sendmessage: function() {
-    var postresult = this.whisperpost(this.nickname, this.chatinput);
   },
 
   whisperpost: function(topic, input) {
