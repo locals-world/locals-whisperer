@@ -106,7 +106,7 @@ Polymer({
       this.progress = Math.floor(this.timerval / 60 * 100);
     }
 
-    if (this.timerval >= 60) {
+    if (this.timerval >= 5 * 60) {
       this.topic = this._getpincode(this.decimals);
       this.timerval = 0;
     }
