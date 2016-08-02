@@ -18,6 +18,7 @@ Example:
     <locals-whisperer></locals-whisperer>
 
 @element locals-whisperer
+@demo demo/index.html
 -->
 <dom-module id="locals-whisperer">
   <template>  
@@ -71,6 +72,7 @@ Polymer({
     this.holding = false;
 
     this.channels = {};
+    this.securechannels = {};
 
     setInterval(this.timer.bind(this), 1000);
 
@@ -195,10 +197,37 @@ Polymer({
       this.filter.watch(function(error, result) {
         if (!error) {
           var payload = JSON.parse(self.web3.toAscii(result.payload));
-          self.fire('msg-received', {
-            topic: payload.topic,
-            payload: JSON.parse(payload.input)
-          });
+
+debugger;
+
+          switch (payload.command) {
+
+            case 'requestaes':
+              var crypt = new JSEncrypt({
+                default_key_size: 512
+              });
+              crypt.setPublicKey(payload.pubkey);
+
+              var aeskey = generateKey(50);
+
+              var encryptedkey = crypt.encrypt(aeskey);
+
+              this.securechannels[payload.from] = {
+                aeskey: aeskey
+              };
+
+              this.raw_whisperpost(payload.from, {
+                command: 'sendaes',
+                encryptedaes: encryptedkey,
+                from: this.topic
+              });
+
+              break;
+
+            default:
+              self.fire('msg-received', payload);
+          }
+
         }
       });
     }
@@ -211,17 +240,42 @@ Polymer({
   },
 
   whisperpost: function(topic, input) {
-    return this.web3.shh.post({
+
+    topic = topic.toString();
+debugger;
+    if (!this.securechannels[topic]){
+      // Create a secure tunnel
+
+      var c = new JSEncrypt({
+        default_key_size: 512
+      });
+
+      this.securechannels[topic] = {
+        crypt: c,
+        messagequeue: [input]     
+      };
+
+      this.raw_whisperpost(topic,{
+        command: 'requestaes',
+        pubkey: this.securechannels[topic].crypt.getPublicKey(),
+        from: this.topic
+      });
+    }
+
+  },
+  // unencrypted whisper post..
+  raw_whisperpost: function(topic, input) {
+
+   return this.web3.shh.post({
       "from": this.identity,
       "topics": [this.web3.fromAscii(topic)],
-      "payload": this.web3.fromAscii(JSON.stringify({
-        topic: topic,
-        input: input
-      })),
+      "payload": this.web3.fromAscii(input),
       "ttl": 100,
       "priority": 1000
     });
-  },
+ }
+
+
 });
 
 </script>

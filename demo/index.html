@@ -15,32 +15,48 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <title>locals-whisperer Demo</title>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <link rel="import" href="../locals-whisperer.html">
+    <link rel="import" href="../../web3-wallet/web3-wallet.html">
+    <link rel="import" href="../../paper-input/paper-input.html">
+    <link rel="import" href="../../paper-button/paper-button.html">
   </head>
   <body unresolved>
 
-    <p>An example of <code>&lt;locals-whisperer&gt;</code>:</p>
 
-    <p>Make words! <button id="saybtn">Say Something</button></p>
-    <p>Make lasers! <button id="laserbtn">Fire lasers</button></p>
+  <template is="dom-bind" id="app">
 
-    <locals-whisperer author='{"name": "Lord Meowser", "image": "http://placekitten.com/g/200/300"}' fancy>
-      <h2>Hello locals-whisperer</h2>
+    <web3-wallet id="web3wallet" web3="{{web3}}" host="http://faucet.ma.cx:8545" account={{account}} password="test" walletname="whispererdemo"></web3-wallet>
+
+    <locals-whisperer id="whisperer" web3="{{web3}}" topic="{{topic}}">
     </locals-whisperer>
 
+      <h2>My topic is {{topic}}</h2>
+
+      <paper-input label="enter a channel" value="{{remotechannel}}"></paper-input>
+      <paper-button raised on-tap="sendamessage">Send a message!</paper-button>
+
+  </template>
     <script>
-      var seedElement = document.querySelector('locals-whisperer');
+
+
+      var app = document.querySelector('#app');
+      app.sendamessage = function(){
+        console.log('send message....',app.remotechannel);
+//        console.log(whisperer);
+        app.$.whisperer.whisperpost(app.remotechannel,"test");
+      };
+
       
-      document.querySelector('#saybtn').addEventListener('click', function() {
-        alert(seedElement.sayHello('Hallo!'));
-      });
+      // document.querySelector('#saybtn').addEventListener('click', function() {
+      //   alert(seedElement.sayHello('Hallo!'));
+      // });
       
-      document.querySelector('#laserbtn').addEventListener('click', function() {
-        seedElement.fireLasers();
-      });
+      // document.querySelector('#laserbtn').addEventListener('click', function() {
+      //   seedElement.fireLasers();
+      // });
       
-      document.addEventListener("locals-whisperer-lasers", function(e) {
-        console.log(e.detail.sound);
-      });
+      // document.addEventListener("locals-whisperer-lasers", function(e) {
+      //   console.log(e.detail.sound);
+      // });
       
     </script>
 
