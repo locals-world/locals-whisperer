@@ -54,7 +54,12 @@ Polymer({
     decimals: {
       type: Number,
       value: 5
-    }
+    },
+
+    identity: {
+      type: String,
+      notify: true
+    },
 
   },
 
@@ -80,12 +85,13 @@ Polymer({
 
   _getpincode: function(decimals) {
 
+
     if (decimals < 2) {
       decimals = 2;
     }
     l = Math.pow(10, decimals - 1);
     var rnd = Math.floor(Math.random() * (l * 9)) + l - 1;
-    return (rnd.toString());
+    return (("chan"  + rnd).toString());
   },
 
   // Triggering this function holds on to the current value for 5 minutes.
@@ -121,8 +127,9 @@ Polymer({
 
       this.channels[_pin] = {
         filter: this.web3.shh.filter({
-          "topics": [_pin],
-        })
+          "topics": [this.web3.fromAscii(_pin)],
+        }),
+        status: 'handshake'
       };
 
       console.log("locals-whisperer: channelswitch, creating channel ", _pin);
@@ -134,6 +141,8 @@ Polymer({
             topic: payload.topic,
             payload: JSON.parse(payload.input)
           });
+        }else{
+          console.log('error watching',error);
         }
       }.bind(this));
 
@@ -176,7 +185,6 @@ Polymer({
   _web3: function() {
     var self = this;
     console.log('web3 started');
-    this.identity = this.web3.shh.newIdentity();
   },
 
   _topic: function() {
@@ -195,10 +203,10 @@ Polymer({
       console.log("locals-whisperer: channelswitch, start listening to", this.topic);
 
       this.filter.watch(function(error, result) {
+
         if (!error) {
           var payload = JSON.parse(self.web3.toAscii(result.payload));
 
-debugger;
 
           switch (payload.command) {
 
@@ -208,22 +216,26 @@ debugger;
               });
               crypt.setPublicKey(payload.pubkey);
 
-              var aeskey = generateKey(50);
+              var aeskey = self._generateKey(50);
 
               var encryptedkey = crypt.encrypt(aeskey);
 
-              this.securechannels[payload.from] = {
+              self.securechannels[payload.from] = {
                 aeskey: aeskey
               };
 
-              this.raw_whisperpost(payload.from, {
-                command: 'sendaes',
+              self.raw_whisperpost(payload.from, {
+                command: 'aes',
                 encryptedaes: encryptedkey,
-                from: this.topic
+                from: self.topic
               });
 
               break;
-
+            case 'aes':
+              debugger;
+              console.log(self.securechannels[payload.from]);
+//              payload.encryptedaes.crypt
+            
             default:
               self.fire('msg-received', payload);
           }
@@ -233,17 +245,27 @@ debugger;
     }
   },
 
+  _generateKey: function(keyLength) {
+    var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz*&-%/!?*+=()";
+    var randomstring = '';
+
+    for (var i = 0; i < keyLength; i++) {
+      var rnum = Math.floor(Math.random() * chars.length);
+      randomstring += chars.substring(rnum, rnum + 1);
+    }
+    return randomstring;
+  },
+
   _web3: function() {
     var self = this;
     console.log('web3 started');
-    this.identity = this.web3.shh.newIdentity();
   },
 
   whisperpost: function(topic, input) {
 
     topic = topic.toString();
-debugger;
-    if (!this.securechannels[topic]){
+
+    if (!this.securechannels[topic] || this.securechannels[topic] !== 'established' ){
       // Create a secure tunnel
 
       var c = new JSEncrypt({
@@ -265,15 +287,21 @@ debugger;
   },
   // unencrypted whisper post..
   raw_whisperpost: function(topic, input) {
-
-   return this.web3.shh.post({
+    if (!this.identity) {
+      this.identity = this.web3.shh.newIdentity();
+    }
+    var options = {
       "from": this.identity,
       "topics": [this.web3.fromAscii(topic)],
-      "payload": this.web3.fromAscii(input),
+      "payload": this.web3.fromAscii(JSON.stringify(input)),
       "ttl": 100,
       "priority": 1000
+    };
+
+    return this.web3.shh.post(options, function(err, res) {
+      console.log(err, res);
     });
- }
+  }
 
 
 });

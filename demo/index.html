@@ -24,11 +24,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <template is="dom-bind" id="app">
 
-    <web3-wallet id="web3wallet" web3="{{web3}}" host="http://faucet.ma.cx:8545" account={{account}} password="test" walletname="whispererdemo"></web3-wallet>
+    <web3-wallet id="web3wallet" web3="{{web3}}" host="http://faucet.ma.cx:8545" account={{account}} password="test" walletname="{{walletname}}"></web3-wallet>
 
-    <locals-whisperer id="whisperer" web3="{{web3}}" topic="{{topic}}">
+    <locals-whisperer identity="{{identity}}" id="whisperer" web3="{{web3}}" topic="{{topic}}">
     </locals-whisperer>
-
+      <h2>Walletname is [[walletname]]</h2>
+      <h2>My account is [[account]]</h2>
+      <h2>My identity is [[identity]]</h2>
       <h2>My topic is {{topic}}</h2>
 
       <paper-input label="enter a channel" value="{{remotechannel}}"></paper-input>
@@ -37,12 +39,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   </template>
     <script>
 
+    
 
       var app = document.querySelector('#app');
+        app.walletname = "w" + Math.floor(Math.random() * 100000000);
       app.sendamessage = function(){
         console.log('send message....',app.remotechannel);
 //        console.log(whisperer);
         app.$.whisperer.whisperpost(app.remotechannel,"test");
+
       };
 
       
