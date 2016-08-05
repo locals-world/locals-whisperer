@@ -26,42 +26,40 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     <web3-wallet id="web3wallet" web3="{{web3}}" host="http://faucet.ma.cx:8545" account={{account}} password="test" walletname="{{walletname}}"></web3-wallet>
 
-    <locals-whisperer identity="{{identity}}" id="whisperer" web3="{{web3}}" topic="{{topic}}">
+    <locals-whisperer identity="{{identity}}" id="whisperer" web3="{{web3}}" topic="{{topic}}" on-message-received="msgrecieved">
     </locals-whisperer>
       <h2>Walletname is [[walletname]]</h2>
       <h2>My account is [[account]]</h2>
       <h2>My identity is [[identity]]</h2>
       <h2>My topic is {{topic}}</h2>
-
       <paper-input label="enter a channel" value="{{remotechannel}}"></paper-input>
       <paper-button raised on-tap="sendamessage">Send a message!</paper-button>
 
+      <h2>Messages</h2>
+      <template is="dom-repeat" items="{{messages}}">
+        <li>From : {{item.from}} : {{item.message}}</li>
+      </template>
+
+
   </template>
     <script>
-
-    
-
       var app = document.querySelector('#app');
-        app.walletname = "w" + Math.floor(Math.random() * 100000000);
-      app.sendamessage = function(){
-        console.log('send message....',app.remotechannel);
-//        console.log(whisperer);
-        app.$.whisperer.whisperpost(app.remotechannel,"test");
+      app.walletname = "w" + Math.floor(Math.random() * 100000000);
+      app.messages = [];
+      app.sendamessage = function() {
+        console.log('send message....', app.remotechannel);
+        //        console.log(whisperer);
+        app.$.whisperer.whisperpost(app.remotechannel, "ping");
 
       };
 
-      
-      // document.querySelector('#saybtn').addEventListener('click', function() {
-      //   alert(seedElement.sayHello('Hallo!'));
-      // });
-      
-      // document.querySelector('#laserbtn').addEventListener('click', function() {
-      //   seedElement.fireLasers();
-      // });
-      
-      // document.addEventListener("locals-whisperer-lasers", function(e) {
-      //   console.log(e.detail.sound);
-      // });
+      app.msgrecieved = function(e) {
+        console.log(e);
+        this.push('messages', e.detail);
+        if (e.detail.message === 'ping') {
+          app.$.whisperer.whisperpost(e.detail.from, "pong");
+        }
+      }
       
     </script>
 
